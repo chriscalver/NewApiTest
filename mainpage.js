@@ -23,6 +23,54 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('showFormBtn').style.display = 'inline-block';
         };
     }
+    // Assign edit form submit handler
+    var editForm = document.getElementById('editForm');
+    if (editForm) {
+        editForm.onsubmit = function(e) {
+            e.preventDefault();
+            var id = document.getElementById('editId').value;
+            var name = document.getElementById('editName').value;
+            var description = document.getElementById('editDescription').value;
+            var location = document.getElementById('editLocation').value;
+            var size = document.getElementById('editSize').value;
+            var isHot = document.getElementById('editIsHot').checked;
+            var barcode = document.getElementById('editBarcode').value;
+            // Build payload with mock data for missing fields
+            var now = new Date().toISOString();
+            var payload = {
+                id: Number(id),
+                name: name,
+                description: description,
+                location: location,
+                imageUrl: "string",
+                imageName: "string",
+                size: size,
+                extraStrOne: barcode,
+                extraStrTwo: "string",
+                isActive: 0,
+                extraIntOne: 0,
+                extraIntTwo: 0,
+                lastPurchase: now,
+                lastUpdated: now,
+                isHot: isHot
+            };
+            var proxyUrl = 'http://localhost:3000/proxy?url=' + encodeURIComponent('https://www.chriscalver.com/ApiTest/api/Pantry?id=' + id);
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', proxyUrl, true);
+            xhr.setRequestHeader('accept', '*/*');
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.setRequestHeader('X-HTTP-Method-Override', 'PUT');
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    alert('Pantry Item updated successfully.');
+                    window.location.reload();
+                } else {
+                    alert('Failed to update Pantry Item.');
+                }
+            };
+            xhr.send(JSON.stringify(payload));
+        };
+    }
 });
 function submitPantryForm(e) {
     e.preventDefault();
