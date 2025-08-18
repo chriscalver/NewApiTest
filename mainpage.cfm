@@ -1,5 +1,15 @@
+<cfif structKeyExists(form, "deleteId")>
+    <cfhttp url="https://www.chriscalver.com/ApiTest/api/Pantry/#form.deleteId#" method="delete" result="deleteResult">
+        <cfhttpparam type="header" name="accept" value="application/json">
+    </cfhttp>
+</cfif>
 <cfhttp url="https://www.chriscalver.com/ApiTest/api/Pantry" method="get" result="apiResult" />
 <cfset apiData = deserializeJSON(apiResult.FileContent) />
+<cfoutput>
+<script>
+window.apiData = #serializeJSON(apiData)#;
+</script>
+</cfoutput>
 <link rel="stylesheet" type="text/css" href="./styles.css">
 <cfoutput>
     <h1 class="pantry-header">
@@ -8,7 +18,7 @@
     </h1>
     <!-- PantryPro API main page -->
     <cfif NOT (isDefined('addResult') AND structKeyExists(addResult, "StatusCode") AND (addResult.StatusCode EQ 200 OR addResult.StatusCode EQ 201))>
-        <button id="showFormBtn" class="form-button" style="margin-bottom:15px; margin-left: 20px;">Add New Pantry Item</button>
+        <button id="showFormBtn" class="form-button" style="margin-bottom:15px; margin-left: 40px;">Add New Pantry Item</button>
         <div class="add-item-form-container" style="display:none;" id="formContainer">
             <form method="post" action="mainpage.cfm" class="add-item-form" id="pantryForm" onsubmit="submitPantryForm(event)">
                 <!-- Form fields for PantryPro API -->
@@ -30,7 +40,7 @@
                 <!-- Last Updated input removed; value will be set to current timestamp on submit -->
                 <label for="isHot">Is Hot:</label><br>
                 <input type="checkbox" id="isHot" name="isHot" value="true" class="form-input" <cfif structKeyExists(form, 'isHot')>checked</cfif>> <span>Check for True</span><br>
-                <button type="submit" class="form-button">Preview Payload</button>
+                <button type="submit" class="form-button">Save New Entry</button>
                 <button type="button" class="form-button" id="cancelFormBtn" style="margin-left:10px;">Cancel</button>
             </form>
             <script src="mainpage.js"></script>
@@ -57,60 +67,34 @@
                 <input type="checkbox" id="isHot" name="isHot" value="true" class="form-input"><span>Check for True</span><br>
                 <button type="submit" class="form-button">Submit</button>
             </form>
-        </div>
-    </cfif>
-    <cfif structKeyExists(form, "name")>
-        <cfset isHotValue = structKeyExists(form, "isHot")>
-        <cfset isHotJson = isHotValue ? "true" : "false">
-        <cfset now = now()>
-        <cfset datestamp = dateFormat(now, "yyyy-mm-dd") & "T" & timeFormat(now, "HH:mm:ss.l")>
-        <cfset apiPayload = '{'
-            & '"id": 0,'
-            & '"name": "#form.name#",'
-            & '"description": "#form.description#",'
-            & '"location": "#form.location#",'
-            & '"imageUrl": "picture",'
-            & '"imageName": "picture",'
-            & '"size": "#form.size#",'
-            & '"extraStrOne": "ExStr",'
-            & '"extraStrTwo": "ExStr",'
-            & '"isActive": "1",'
-            & '"extraIntOne": 1,'
-            & '"extraIntTwo": 1,'
-            & '"lastPurchase": "#datestamp#",'
-            & '"lastUpdated": "#datestamp#",'
-            & '"isHot": #isHotJson#'
-        & '}'>
-        <cfhttp url="https://www.chriscalver.com/ApiTest/api/Pantry" method="post" result="addResult">
-            <cfhttpparam type="header" name="accept" value="text/plain">
-            <cfhttpparam type="header" name="Content-Type" value="application/json">
-            <cfhttpparam type="body" value="#apiPayload#">
-        </cfhttp>
-        <!--- <div class="api-block">
-            <strong>JSON Payload Sent:</strong>
-            <pre class="api-json">#apiPayload#</pre>
-        </div>
-        <cfif addResult.StatusCode EQ 200>
-            <cfhttp url="https://www.chriscalver.com/ApiTest/api/Pantry" method="get" result="apiResultAfterPost" />
-            <cfset apiDataAfterPost = deserializeJSON(apiResultAfterPost.FileContent) />
-        <div class="api-block">
-            <strong>Raw API Response:</strong>
-            <pre class="api-response">#addResult.FileContent#</pre>
-        </div> --->
-        <cfif addResult.StatusCode EQ 200 OR 201>
-            <div class="success-message">Pantry Item was successfully added.</div>
-            <script>
-                var form = document.getElementById('pantryForm');
-                if (form) { form.reset(); }
-            </script>
-        <cfelse>
-            <div class="error-message">Pantry Item was NOT added.</div>
+		</div>
         </cfif>
-    </cfif>
+
+    <!-- Edit form section (not modal) -->
+    <div id="editFormSection" class="add-item-form-container" style="display:none; margin-bottom:20px;">
+        <form id="editForm">
+            <input type="hidden" name="editId" id="editId">
+            <h2>Edit Pantry Item</h2>
+            <label for="editName">Name:</label><br>
+            <input type="text" id="editName" name="editName" class="form-input" required><br>
+            <label for="editDescription">Description:</label><br>
+            <input type="text" id="editDescription" name="editDescription" class="form-input"><br>
+            <label for="editLocation">Location:</label><br>
+            <input type="text" id="editLocation" name="editLocation" class="form-input"><br>
+            <label for="editSize">Size:</label><br>
+            <input type="text" id="editSize" name="editSize" class="form-input"><br>
+            <label for="editIsHot">Is Hot:</label>
+            <input type="checkbox" id="editIsHot" name="editIsHot" value="true" class="form-input"> <span>Check for True</span><br>
+            <label for="editBarcode">Barcode:</label><br>
+            <input type="text" id="editBarcode" name="editBarcode" class="form-input"><br>
+            <button type="submit" class="form-button">Save Changes</button>
+            <button type="button" class="form-button" id="cancelEditBtn">Cancel</button>
+        </form>
+    </div>
+
 
     
-    <table border="1" cellpadding="5" cellspacing="0">
-    
+    <table id="pantryTable" border="1" cellpadding="5" cellspacing="0">
         <tr>
             <th>ID</th>
             <th>Name</th>
@@ -118,15 +102,16 @@
             <th>Location</th>
             <th>Size</th>
             <th>Is Hot</th>
-            <th>Is Active</th>
-            <th>Last Updated</th>
-            <th>Last Purchase</th>
-            <th>Image Name</th>
-            <th>Image URL</th>
-            <th>Extra Str One</th>
-            <th>Extra Str Two</th>
-            <th>Extra Int One</th>
-            <th>Extra Int Two</th>
+         <!---    <th>Is Active</th> --->
+           <!---  <th>Last Updated</th>
+            <th>Last Purchase</th> --->
+            <!--- <th>Image Name</th>
+            <th>Image URL</th> --->
+            <th>Barcode</th>
+          <!---   <th>Extra Str Two</th> --->
+           <!---  <th>Extra Int One</th>
+            <th>Extra Int Two</th> --->
+            <th>Actions</th>
         </tr>
         <cfloop array="#apiData#" index="item">
             <tr>
@@ -136,16 +121,30 @@
                 <td>#item.location#</td>
                 <td>#item.size#</td>
                 <td>#item.isHot#</td>
-                <td>#item.isActive#</td>
-                <td>#item.lastUpdated#</td>
-                <td>#item.lastPurchase#</td>
-                <td>#item.imageName#</td>
-                <td>#item.imageUrl#</td>
+             <!---    <td>#item.isActive#</td> --->
+              <!---   <td>#item.lastUpdated#</td>
+                <td>#item.lastPurchase#</td> --->
+               <!---  <td>#item.imageName#</td>
+                <td>#item.imageUrl#</td> --->
                 <td>#item.extraStrOne#</td>
-                <td>#item.extraStrTwo#</td>
-                <td>#item.extraIntOne#</td>
-                <td>#item.extraIntTwo#</td>
+             <!---    <td>#item.extraStrTwo#</td> --->
+               <!---  <td>#item.extraIntOne#</td>
+                <td>#item.extraIntTwo#</td> --->
+                <td>
+                    <form method="post" action="mainpage.cfm" style="display:inline;">
+                        <input type="hidden" name="deleteId" value="#item.id#">
+                        <button type="submit" class="form-button delete-button" onclick="return confirm('Are you sure you want to delete this item?');">Delete</button>
+                        <button type="button" class="form-button edit-button" style="margin-left:6px;" onclick="showEditForm(#item.id#)">Edit</button>
+<script src="mainpage.js"></script>
+                    </form>
+                </td>
             </tr>
         </cfloop>
     </table>
+
 </cfoutput>
+<!-- Footer: affixed to bottom of viewport -->
+<div class="footer-affix">
+    Powered by ColdFusion<br>
+    <img src="https://cdn-icons-png.flaticon.com/512/5968/5968705.png" alt="ColdFusion Logo" class="cf-logo">
+</div>
